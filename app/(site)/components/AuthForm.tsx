@@ -17,11 +17,39 @@ const AuthForm = () => {
     const [variant, setVariant] = useState<Variant>('LOGIN')
     const [isLoading, setIsLoading] = useState<boolean>(false)
 
+    async function getRoleAndContinue() {
+        const username = localStorage.getItem('username');
+
+        const response = await axios.get(`http://localhost:8080/users/username/${username}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+
+        console.log('Response Data:', response.data);
+
+        const role = response.data.role;
+
+        localStorage.setItem('role', role);
+
+        if (role === 'ROLE_ADMIN') {
+            router.push('/admin');
+        } else if (role === 'ROLE_CUSTOMER') {
+            router.push('/users');
+        } else if (role === 'ROLE_MANAGER') {
+            router.push('/manager');
+        } else if (role === 'ROLE_LOAN_OFFICER') {
+            router.push('/loan-officer');
+        }
+    }
+
     useEffect(() => {
         console.log('Session:', session);
         if (session?.status === 'authenticated') {
             localStorage.setItem('token', (session.data?.user as any)?.token || '');
-            router.push('/users')
+            getRoleAndContinue();
         }
     }, [session?.status, router])
 
@@ -74,7 +102,8 @@ const AuthForm = () => {
                 if (callback?.ok && !callback?.error) {
                     toast.success('Logged in!')
                     localStorage.setItem('username', data.username);
-                    router.push('/users')
+                    getRoleAndContinue();
+                    // router.push('/users')
                 }
             })
             .finally(() => setIsLoading(false))
