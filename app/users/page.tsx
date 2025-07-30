@@ -8,6 +8,7 @@ import { FieldValues, useForm } from 'react-hook-form'
 import Input from '../components/inputs/Input'
 import axios from 'axios'
 import Select from '../components/inputs/Select'
+import Account from './components/Account'
 
 const page = () => {
   interface Branch {
@@ -20,7 +21,37 @@ const page = () => {
 
   const [addAccountOpen, setAddAccountOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [accounts, setAccounts] = React.useState([]);
+  interface AccountType {
+    accountHolderName: string;
+    accountId: number;
+    accountNumber: string;
+    accountType: string;
+    address: string;
+    balance: number;
+    overdraftLimit: number;
+    status: string;
+    user: {
+      userId: number;
+      username: string;
+      role: string;
+    };
+    active: boolean;
+    branch: {
+      branchId: number;
+      ifscCode: string;
+      address: string;
+    };
+    createdAt: string;
+    email: string;
+    joinDate: string;
+    manager?: any; // can be null
+    name: string;
+    pan: string;
+    password?: any; // can be null
+    phone: string;
+  }
+
+  const [accounts, setAccounts] = React.useState<AccountType[]>([]);
   const [branches, setBranches] = React.useState<Branch[]>([]);
   const [accountType, setAccountType] = React.useState('');
 
@@ -33,11 +64,15 @@ const page = () => {
           }
         })
 
-        setAccounts(res.data);
+        const currentUserAccounts = res.data.filter((account: any) => account.user.username === localStorage.getItem('username'));
+
+        setAccounts(currentUserAccounts);
+
+        console.log('Accounts:', currentUserAccounts);
       } catch (error) {
         console.log('Error fetching accounts:', error);
       }
-      
+
     }
 
     getAllAccounts();
@@ -45,7 +80,7 @@ const page = () => {
 
   useEffect(() => {
     if (addAccountOpen) {
-      
+
     }
   }, [addAccountOpen])
 
@@ -75,11 +110,11 @@ const page = () => {
       const username = localStorage.getItem('username');
       try {
         const response = await axios.get(`http://localhost:8080/users/username/${username}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
             }
+          }
         );
 
         console.log('Response Data:', response.data);
@@ -150,6 +185,7 @@ const page = () => {
 
     setIsLoading(false);
     setAddAccountOpen(false);
+    window.location.reload();
   }
 
   if (status === 'loading') {
@@ -171,14 +207,11 @@ const page = () => {
             </Button>
           </div>
 
-          {/* list of all accounts of current user */}
           {
             accounts.length > 0 ? (
-              <div className="space-y-4">
+              <div className="flex items-center flex-wrap gap-4">
                 {accounts.map((account) => (
-                  <div key={account}>
-                    Account
-                  </div>
+                  <Account key={account.accountId} account={account} />
                 ))}
               </div>
             ) : (
@@ -196,81 +229,81 @@ const page = () => {
               <h2 className="text-lg font-semibold mb-4">Open New Account</h2>
               {/* Form fields for opening a new account */}
               <form
-                  className="space-y-6"
-                  onSubmit={handleSubmit(onSubmit)}
+                className="space-y-6"
+                onSubmit={handleSubmit(onSubmit)}
               >
-                <Input 
-                    id="user.userId" 
-                    label="User ID" 
-                    register={register} 
-                    errors={errors}
-                    disabled={true}
+                <Input
+                  id="user.userId"
+                  label="User ID"
+                  register={register}
+                  errors={errors}
+                  disabled={true}
                 />
-                <Input 
-                    id="accountHolderName" 
-                    label="Name" 
-                    register={register} 
-                    errors={errors}
-                    disabled={isLoading}
-                />
-
-                <Input 
-                    id="mobile" 
-                    label="Mobile" 
-                    type="tel"
-                    register={register} 
-                    errors={errors}
-                    disabled={isLoading}
-                />
-                <Input 
-                    id="email" 
-                    label="Email" 
-                    type="email"
-                    register={register} 
-                    errors={errors}
-                    disabled={isLoading}
+                <Input
+                  id="accountHolderName"
+                  label="Name"
+                  register={register}
+                  errors={errors}
+                  disabled={isLoading}
                 />
 
-                <Input 
-                    id="address" 
-                    label="Address" 
-                    register={register} 
-                    errors={errors}
-                    disabled={isLoading}
+                <Input
+                  id="mobile"
+                  label="Mobile"
+                  type="tel"
+                  register={register}
+                  errors={errors}
+                  disabled={isLoading}
+                />
+                <Input
+                  id="email"
+                  label="Email"
+                  type="email"
+                  register={register}
+                  errors={errors}
+                  disabled={isLoading}
                 />
 
-                <Input 
-                    id="pan" 
-                    label="PAN" 
-                    register={register} 
-                    errors={errors}
-                    disabled={isLoading}
+                <Input
+                  id="address"
+                  label="Address"
+                  register={register}
+                  errors={errors}
+                  disabled={isLoading}
                 />
 
-                <Select
-                    label="Account Type"
-                    value={undefined}
-                    onChange={(value) => {
-                        setAccountType(value.value);
-                    }}
-                    options={[
-                        { value: 'SAVINGS', label: 'Savings' },
-                        { value: 'CURRENT', label: 'Current' },
-                    ]}
-                    disabled={isLoading}
+                <Input
+                  id="pan"
+                  label="PAN"
+                  register={register}
+                  errors={errors}
+                  disabled={isLoading}
                 />
 
                 <Select
-                    label="Branch"
-                    value={undefined}
-                    onChange={(value) => {
-                        reset({ branch: { branchId: value.value } });
-                    }}
-                    options={branches.map(branch => ({
-                        value: branch.branchId,
-                        label: branch.address
-                    }))}
-                    disabled={isLoading}
+                  label="Account Type"
+                  value={undefined}
+                  onChange={(value) => {
+                    setAccountType(value.value);
+                  }}
+                  options={[
+                    { value: 'SAVINGS', label: 'Savings' },
+                    { value: 'CURRENT', label: 'Current' },
+                  ]}
+                  disabled={isLoading}
+                />
+
+                <Select
+                  label="Branch"
+                  value={undefined}
+                  onChange={(value) => {
+                    reset({ branch: { branchId: value.value } });
+                  }}
+                  options={branches.map(branch => ({
+                    value: branch.branchId,
+                    label: branch.address
+                  }))}
+                  disabled={isLoading}
                 />
 
                 <div>
