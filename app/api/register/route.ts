@@ -5,9 +5,9 @@ export async function POST(
 ) {
     try{
         const body = await request.json();
-        const { email, username, password, phone, address, pan } = body;
+        const { email, username, password, phone, address, pan, name } = body;
 
-        if(!email || !username || !password || !phone || !address || !pan) {
+        if(!email || !username || !password || !phone || !address || !pan || !name) {
             return new NextResponse('Missing info', { status: 400 });
         }
 
@@ -26,7 +26,8 @@ export async function POST(
                 phone,
                 address,
                 pan,
-                role: "CUSTOMER"
+                name,
+                role: "ROLE_CUSTOMER"
             })
         });
 

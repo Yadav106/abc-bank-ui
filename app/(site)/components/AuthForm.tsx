@@ -20,6 +20,7 @@ const AuthForm = () => {
     useEffect(() => {
         console.log('Session:', session);
         if (session?.status === 'authenticated') {
+            localStorage.setItem('token', (session.data?.user as any)?.token || '');
             router.push('/users')
         }
     }, [session?.status, router])
@@ -40,6 +41,7 @@ const AuthForm = () => {
         }
     } = useForm<FieldValues>({
         defaultValues: {
+            name: '',
             email: '',
             phone: '',
             address: '',
@@ -71,6 +73,7 @@ const AuthForm = () => {
 
                 if (callback?.ok && !callback?.error) {
                     toast.success('Logged in!')
+                    localStorage.setItem('username', data.username);
                     router.push('/users')
                 }
             })
@@ -87,6 +90,13 @@ const AuthForm = () => {
                 >
                     {variant === 'REGISTER' && (
                         <>
+                            <Input 
+                                id="name" 
+                                label="Name" 
+                                register={register} 
+                                errors={errors}
+                                disabled={isLoading}
+                            />
                             <Input 
                                 id="email" 
                                 label="Email" 

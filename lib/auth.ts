@@ -21,7 +21,7 @@ export const authOptions: AuthOptions = {
                         password: credentials.password
                     });
 
-                    console.log('Response:', response.data);
+                    console.error('Response:', response.data);
 
                     // Check if login was successful
                     if (response.status === 200 && response.data) {
