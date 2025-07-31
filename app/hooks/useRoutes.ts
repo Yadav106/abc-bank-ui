@@ -8,6 +8,8 @@ import { GiMoneyStack } from "react-icons/gi";
 import { RiAdminFill } from "react-icons/ri";
 import { GrHistory } from "react-icons/gr";
 import { signOut } from "next-auth/react";
+import { FaHandHoldingUsd } from 'react-icons/fa';
+
 
 const handleLogout = () => {
     signOut({
@@ -40,7 +42,7 @@ const useRoutes = () => {
             {
                 label: "Loan Accounts",
                 href: "/users/loans",
-                icon: GiMoneyStack, // You can replace with a more loan-specific icon if desired
+                icon: FaHandHoldingUsd, // You can replace with a more loan-specific icon if desired
                 active: pathname === "/users/loans"
             },
             {

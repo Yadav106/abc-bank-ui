@@ -16,7 +16,12 @@ interface Loan {
   };
 }
 
-const LoanCard = ({ loan }: { loan: Loan }) => {
+interface LoanCardProps {
+  loan: Loan;
+  onRepaymentClick: (loan: Loan) => void;
+}
+
+const LoanCard = ({ loan, onRepaymentClick }: LoanCardProps) => {
   const getStatusConfig = () => {
     switch (loan.status) {
       case 'APPROVED':
@@ -109,7 +114,10 @@ const LoanCard = ({ loan }: { loan: Loan }) => {
   };
 
   return (
-    <div className="relative bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden group">
+    <div 
+      className="relative bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden group"
+      onClick={() => onRepaymentClick(loan)}
+    >
       {/* Gradient Header */}
       <div className={`${loanTypeConfig.bg} p-6 text-white relative`}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
