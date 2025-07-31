@@ -134,7 +134,7 @@ const AdminPage = () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post("http://localhost:8080/branches", data, {
+      await axios.post("http://localhost:8080/branches/create", data, {
         headers: {
           Authorization: `Bearer ${token}`
         }
