@@ -9,7 +9,7 @@ const layout = ({
   return (
     <>
       <Sidebar>
-        <div className="p-4">
+        <div>
           {children}
         </div>
       </Sidebar>

@@ -1,10 +1,11 @@
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import { HiChat } from "react-icons/hi";
 import {
     HiArrowLeftOnRectangle,
     HiUsers
 } from "react-icons/hi2";
+import { GiMoneyStack } from "react-icons/gi";
+import { RiAdminFill } from "react-icons/ri";
 import { signOut } from "next-auth/react";
 
 const handleLogout = () => {
@@ -16,20 +17,56 @@ const handleLogout = () => {
 const useRoutes = () => {
     const pathname = usePathname();
 
-    const routes = useMemo(() => [
-        {
-            label: "Users",
-            href: "/users",
-            icon: HiUsers,
-            active: pathname === "/users"
-        },
-        {
-            label: "Sign Out",
-            href: "#",
-            onClick: () => handleLogout(),
-            icon: HiArrowLeftOnRectangle,
-        }
-    ],[pathname])
+    let userRole;
+    if (typeof window !== "undefined") {
+        userRole = localStorage?.getItem('role');
+    }
+
+    const isAdmin = userRole === 'ROLE_ADMIN';
+    const isCustomer = userRole === 'ROLE_CUSTOMER';
+    const isLoanOfficer = userRole === 'ROLE_LOAN_OFFICER';
+
+    let routes:any = [];
+
+    if (isCustomer) {
+        routes = useMemo(() => [
+            {
+                label: "Users",
+                href: "/users",
+                icon: HiUsers,
+                active: pathname === "/users"
+            },
+            {
+                label: "Transfer Money",
+                href: "/users/transfer",
+                icon: GiMoneyStack,
+                active: pathname === "/users/transfer"
+            },
+            {
+                label: "Sign Out",
+                href: "#",
+                onClick: () => handleLogout(),
+                icon: HiArrowLeftOnRectangle,
+            }
+        ],[pathname])
+    }
+
+    if (isAdmin) {
+        routes = useMemo(() => [
+            {
+                label: "Manage Users",
+                href: "/admin",
+                icon: RiAdminFill,
+                active: pathname === "/admin"
+            },
+            {
+                label: "Sign Out",
+                href: "#",
+                onClick: () => handleLogout(),
+                icon: HiArrowLeftOnRectangle,
+            }
+        ],[pathname])
+    }
 
     return routes;
 }

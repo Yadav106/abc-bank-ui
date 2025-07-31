@@ -10,7 +10,10 @@ interface InputProps {
     required?: boolean,
     register: UseFormRegister<FieldValues>,
     errors: FieldErrors<FieldValues>,
-    disabled?: boolean
+    disabled?: boolean,
+    placeholder?: string,
+    min?: string,
+    step?: string
 }
 
 const Input: React.FC<InputProps> = ({
@@ -20,7 +23,10 @@ const Input: React.FC<InputProps> = ({
     required = false,
     register,
     errors,
-    disabled
+    disabled,
+    placeholder,
+    min,
+    step
 }) => {
     return ( 
         <div>
@@ -33,6 +39,9 @@ const Input: React.FC<InputProps> = ({
                     type={type}
                     autoComplete={id}
                     disabled={disabled}
+                    placeholder={placeholder}
+                    min={min}
+                    step={step}
                     {...register(id, { required })}
                     className={clsx(`
                         form-input
