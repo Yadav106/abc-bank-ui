@@ -7,11 +7,17 @@ import {
 import { GiMoneyStack } from "react-icons/gi";
 import { RiAdminFill } from "react-icons/ri";
 import { GrHistory } from "react-icons/gr";
+import { MdManageAccounts } from "react-icons/md";
 import { signOut } from "next-auth/react";
 import { FaHandHoldingUsd } from 'react-icons/fa';
 
 
 const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+
+    // nextauth.message
     signOut({
       callbackUrl: '/' // Redirect to home page after logout
     })
@@ -28,6 +34,7 @@ const useRoutes = () => {
     const isAdmin = userRole === 'ROLE_ADMIN';
     const isCustomer = userRole === 'ROLE_CUSTOMER';
     const isLoanOfficer = userRole === 'ROLE_LOAN_OFFICER';
+    const isManager = userRole === 'ROLE_MANAGER';
 
     let routes:any = [];
 
@@ -73,6 +80,23 @@ const useRoutes = () => {
                 href: "/admin",
                 icon: RiAdminFill,
                 active: pathname === "/admin"
+            },
+            {
+                label: "Sign Out",
+                href: "#",
+                onClick: () => handleLogout(),
+                icon: HiArrowLeftOnRectangle,
+            }
+        ],[pathname])
+    }
+
+    if (isManager) {
+        routes = useMemo(() => [
+            {
+                label: "Manage Accounts",
+                href: "/manager",
+                icon: MdManageAccounts,
+                active: pathname === "/manager"
             },
             {
                 label: "Sign Out",
