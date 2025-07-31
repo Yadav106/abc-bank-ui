@@ -38,6 +38,12 @@ const useRoutes = () => {
                 active: pathname === "/users"
             },
             {
+                label: "Loan Accounts",
+                href: "/users/loans",
+                icon: GiMoneyStack, // You can replace with a more loan-specific icon if desired
+                active: pathname === "/users/loans"
+            },
+            {
                 label: "Transfer Money",
                 href: "/users/transfer",
                 icon: GiMoneyStack,
