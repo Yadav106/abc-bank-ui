@@ -20,7 +20,9 @@ import {
   DollarSign,
   TrendingUp,
   AlertCircle,
-  CheckSquare
+  CheckSquare,
+  Plus,
+  X
 } from 'lucide-react'
 
 interface Branch {
@@ -79,6 +81,10 @@ const ManagerPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [verifyingAccount, setVerifyingAccount] = useState<number | null>(null);
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositing, setDepositing] = useState(false);
 
   // Fetch current user and all accounts
   useEffect(() => {
@@ -202,6 +208,78 @@ const ManagerPage = () => {
       alert('Failed to verify account. Please try again.');
     } finally {
       setVerifyingAccount(null);
+    }
+  };
+
+  const openDepositModal = (account: Account) => {
+    setSelectedAccount(account);
+    setDepositAmount('');
+    setDepositModalOpen(true);
+  };
+
+  const closeDepositModal = () => {
+    setDepositModalOpen(false);
+    setSelectedAccount(null);
+    setDepositAmount('');
+  };
+
+  const handleDeposit = async () => {
+    if (!selectedAccount || !depositAmount || parseFloat(depositAmount) <= 0) {
+      alert('Please enter a valid deposit amount.');
+      return;
+    }
+
+    setDepositing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const newBalance = selectedAccount.balance + parseFloat(depositAmount);
+      
+      const requestBody = {
+        accountNumber: selectedAccount.accountNumber,
+        accountType: selectedAccount.accountType,
+        balance: newBalance,
+        overdraftLimit: selectedAccount.overdraftLimit,
+        createdOn: selectedAccount.createdOn,
+        status: selectedAccount.status,
+        accountHolderName: selectedAccount.accountHolderName,
+        mobile: selectedAccount.mobile,
+        email: selectedAccount.email,
+        address: selectedAccount.address,
+        pan: selectedAccount.pan,
+        user: {
+          userId: selectedAccount.user.userId
+        },
+        branch: {
+          branchId: selectedAccount.branch.branchId
+        }
+      };
+
+      await axios.put(`http://localhost:8080/accounts/${selectedAccount.accountId}`, requestBody, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Update the account in the local state
+      const updatedAccounts = allAccounts.map(acc => 
+        acc.accountId === selectedAccount.accountId 
+          ? { ...acc, balance: newBalance }
+          : acc
+      );
+      
+      setAllAccounts(updatedAccounts);
+      
+      // Show success message
+      alert(`Successfully deposited ${formatCurrency(parseFloat(depositAmount))} to account ${selectedAccount.accountNumber}`);
+      
+      // Close modal
+      closeDepositModal();
+      
+    } catch (error) {
+      console.error('Error depositing money:', error);
+      alert('Failed to deposit money. Please try again.');
+    } finally {
+      setDepositing(false);
     }
   };
 
@@ -508,35 +586,40 @@ const ManagerPage = () => {
                             </div>
                           </td>
                           <td className='px-6 py-4'>
-                            {account.status === 'UNVERIFIED' && (
-                              <button
-                                onClick={() => verifyAccount(account)}
-                                disabled={verifyingAccount === account.accountId}
-                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                                  verifyingAccount === account.accountId
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-green-500 text-white hover:bg-green-600'
-                                }`}
-                              >
-                                {verifyingAccount === account.accountId ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    Verifying...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckSquare size={16} />
-                                    Verify
-                                  </>
-                                )}
-                              </button>
-                            )}
-                            {account.status === 'VERIFIED' && (
-                              <div className='flex items-center gap-1 text-green-700'>
-                                <CheckCircle size={16} />
-                                <span className='text-sm font-medium'>Verified</span>
-                              </div>
-                            )}
+                            <div className='flex flex-col gap-2'>
+                              {account.status === 'UNVERIFIED' && (
+                                <button
+                                  onClick={() => verifyAccount(account)}
+                                  disabled={verifyingAccount === account.accountId}
+                                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200 ${
+                                    verifyingAccount === account.accountId
+                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      : 'bg-green-500 text-white hover:bg-green-600'
+                                  }`}
+                                >
+                                  {verifyingAccount === account.accountId ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                      Verifying...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckSquare size={14} />
+                                      Verify
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                              {account.status === 'VERIFIED' && (
+                                <button
+                                  onClick={() => openDepositModal(account)}
+                                  className='inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200'
+                                >
+                                  <Plus size={14} />
+                                  Deposit
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -563,6 +646,114 @@ const ManagerPage = () => {
           )}
         </div>
       </div>
+
+      {/* Deposit Modal */}
+      {depositModalOpen && selectedAccount && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl'>
+            <div className='flex items-center justify-between mb-6'>
+              <div className='flex items-center gap-3'>
+                <div className='p-2 bg-blue-100 rounded-lg'>
+                  <Plus className='text-blue-600' size={24} />
+                </div>
+                <div>
+                  <h2 className='text-xl font-bold text-gray-900'>Deposit Money</h2>
+                  <p className='text-gray-600 text-sm'>Add funds to account</p>
+                </div>
+              </div>
+              <button
+                onClick={closeDepositModal}
+                className='p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200'
+              >
+                <X size={20} className='text-gray-500' />
+              </button>
+            </div>
+
+            <div className='space-y-6'>
+              {/* Account Info */}
+              <div className='bg-gray-50 rounded-xl p-4'>
+                <div className='space-y-2'>
+                  <div className='flex justify-between'>
+                    <span className='text-sm text-gray-600'>Account Number:</span>
+                    <span className='text-sm font-medium text-gray-900'>{selectedAccount.accountNumber}</span>
+                  </div>
+                  <div className='flex justify-between'>
+                    <span className='text-sm text-gray-600'>Holder:</span>
+                    <span className='text-sm font-medium text-gray-900'>{selectedAccount.accountHolderName}</span>
+                  </div>
+                  <div className='flex justify-between'>
+                    <span className='text-sm text-gray-600'>Current Balance:</span>
+                    <span className='text-sm font-medium text-gray-900'>{formatCurrency(selectedAccount.balance)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deposit Amount Input */}
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Deposit Amount (₹)
+                </label>
+                <input
+                  type='number'
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  placeholder='Enter amount to deposit'
+                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                  min='0'
+                  step='0.01'
+                />
+              </div>
+
+              {/* New Balance Preview */}
+              {depositAmount && parseFloat(depositAmount) > 0 && (
+                <div className='bg-blue-50 rounded-xl p-4 border border-blue-200'>
+                  <div className='space-y-2'>
+                    <div className='flex justify-between'>
+                      <span className='text-sm text-blue-700'>Current Balance:</span>
+                      <span className='text-sm font-medium text-blue-900'>{formatCurrency(selectedAccount.balance)}</span>
+                    </div>
+                    <div className='flex justify-between'>
+                      <span className='text-sm text-blue-700'>Deposit Amount:</span>
+                      <span className='text-sm font-medium text-blue-900'>+{formatCurrency(parseFloat(depositAmount))}</span>
+                    </div>
+                    <div className='border-t border-blue-200 pt-2'>
+                      <div className='flex justify-between'>
+                        <span className='text-sm font-semibold text-blue-900'>New Balance:</span>
+                        <span className='text-sm font-bold text-blue-900'>{formatCurrency(selectedAccount.balance + parseFloat(depositAmount))}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className='flex gap-3 pt-4'>
+                <button
+                  onClick={closeDepositModal}
+                  disabled={depositing}
+                  className='flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeposit}
+                  disabled={depositing || !depositAmount || parseFloat(depositAmount) <= 0}
+                  className='flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                >
+                  {depositing ? (
+                    <div className='flex items-center justify-center gap-2'>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Depositing...
+                    </div>
+                  ) : (
+                    'Deposit Money'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
