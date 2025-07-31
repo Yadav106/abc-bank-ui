@@ -6,6 +6,7 @@ import {
 } from "react-icons/hi2";
 import { GiMoneyStack } from "react-icons/gi";
 import { RiAdminFill } from "react-icons/ri";
+import { GrHistory } from "react-icons/gr";
 import { signOut } from "next-auth/react";
 
 const handleLogout = () => {
@@ -41,6 +42,12 @@ const useRoutes = () => {
                 href: "/users/transfer",
                 icon: GiMoneyStack,
                 active: pathname === "/users/transfer"
+            },
+            {
+                label: "Transaction History",
+                href: "/users/history",
+                icon: GrHistory,
+                active: pathname === "/users/history"
             },
             {
                 label: "Sign Out",
