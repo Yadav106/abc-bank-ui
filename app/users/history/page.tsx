@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
-import { CreditCard, ArrowRightLeft, AlertCircle, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Calendar, IndianRupee } from 'lucide-react'
+import { CreditCard, ArrowRightLeft, AlertCircle, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Calendar, IndianRupee, Download } from 'lucide-react'
 
 interface Transaction {
   transactionId: number
@@ -28,6 +28,7 @@ const TransactionHistoryPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [userAccountNumbers, setUserAccountNumbers] = useState<string[]>([])
   const [verifiedAccounts, setVerifiedAccounts] = useState<any[]>([])
+  const [isDownloading, setIsDownloading] = useState(false)
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -123,6 +124,63 @@ const TransactionHistoryPage = () => {
     }
   }
 
+  const downloadTransactionStatement = () => {
+    if (transactions.length === 0) {
+      alert('No transactions to download')
+      return
+    }
+
+    setIsDownloading(true)
+    
+    try {
+      const username = localStorage.getItem('username') || 'User'
+      const currentDate = new Date().toLocaleDateString()
+      
+             // Create CSV content
+       let csvContent = 'Transaction ID,Type,Date & Time,Direction,Amount (₹),From Account,To Account,Status\n'
+       
+       // Add transaction data
+       transactions.forEach((tx) => {
+         const { date, time } = formatDate(tx.timestamp)
+         const isReceived = tx.receiverAccount?.accountNumber ? userAccountNumbers.includes(tx.receiverAccount.accountNumber) : false
+         const isSent = tx.senderAccount?.accountNumber ? userAccountNumbers.includes(tx.senderAccount.accountNumber) : false
+         
+         const row = [
+           tx.transactionId.toString(),
+           tx.type.toUpperCase(),
+           `"${date} ${time}"`,
+           isReceived ? 'Incoming' : isSent ? 'Outgoing' : '',
+           tx.amount.toLocaleString(),
+           tx.senderAccount?.accountNumber || 'N/A',
+           tx.receiverAccount?.accountNumber || 'N/A',
+           isReceived ? 'Received' : isSent ? 'Sent' : 'N/A'
+         ].join(',')
+         
+         csvContent += row + '\n'
+       })
+      
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `transaction_statement_${username}_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Show success message
+      alert(`Transaction statement downloaded successfully!\n\nFile contains:\n- ${transactions.length} transactions\n- Generated on: ${currentDate}\n- Total Balance: ₹${totalBalance.toLocaleString()}`)
+      
+    } catch (error) {
+      console.error('Error generating statement:', error)
+      alert('Failed to generate statement. Please try again.')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -161,16 +219,39 @@ const TransactionHistoryPage = () => {
       <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-              <ArrowRightLeft className="text-white" size={28} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+                <ArrowRightLeft className="text-white" size={28} />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  Transaction History
+                </h1>
+                <p className="text-gray-600 mt-1">View all your account transactions</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                Transaction History
-              </h1>
-              <p className="text-gray-600 mt-1">View all your account transactions</p>
-            </div>
+            
+            {/* Download Button */}
+            {transactions.length > 0 && (
+              <button
+                onClick={downloadTransactionStatement}
+                disabled={isDownloading}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                                 {isDownloading ? (
+                   <>
+                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                     <span>Generating CSV...</span>
+                   </>
+                                 ) : (
+                   <>
+                     <Download size={20} />
+                     <span>Download CSV</span>
+                   </>
+                 )}
+              </button>
+            )}
           </div>
           
           {/* Stats */}
