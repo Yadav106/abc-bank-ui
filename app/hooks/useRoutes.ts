@@ -9,6 +9,8 @@ import { RiAdminFill } from "react-icons/ri";
 import { GrHistory } from "react-icons/gr";
 import { MdManageAccounts } from "react-icons/md";
 import { signOut } from "next-auth/react";
+import { FaHandHoldingUsd } from 'react-icons/fa';
+
 
 const handleLogout = () => {
     localStorage.removeItem('token');
@@ -43,6 +45,12 @@ const useRoutes = () => {
                 href: "/users",
                 icon: HiUsers,
                 active: pathname === "/users"
+            },
+            {
+                label: "Loan Accounts",
+                href: "/users/loans",
+                icon: FaHandHoldingUsd, // You can replace with a more loan-specific icon if desired
+                active: pathname === "/users/loans"
             },
             {
                 label: "Transfer Money",
@@ -89,6 +97,23 @@ const useRoutes = () => {
                 href: "/manager",
                 icon: MdManageAccounts,
                 active: pathname === "/manager"
+            },
+            {
+                label: "Sign Out",
+                href: "#",
+                onClick: () => handleLogout(),
+                icon: HiArrowLeftOnRectangle,
+            }
+        ],[pathname])
+    }
+
+    if (isLoanOfficer) {
+        routes = useMemo(() => [
+            {
+                label: "Loan Management",
+                href: "/loan-officer",
+                icon: FaHandHoldingUsd,
+                active: pathname === "/loan-officer"
             },
             {
                 label: "Sign Out",

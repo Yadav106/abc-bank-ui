@@ -85,6 +85,19 @@ const ManagerPage = () => {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositing, setDepositing] = useState(false);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateFormData, setUpdateFormData] = useState({
+    accountHolderName: '',
+    email: '',
+    mobile: '',
+    address: '',
+    pan: '',
+    overdraftLimit: 0
+  });
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [updateDialogMessage, setUpdateDialogMessage] = useState('');
+  const [updateDialogType, setUpdateDialogType] = useState<'success' | 'error'>('success');
 
   // Fetch current user and all accounts
   useEffect(() => {
@@ -221,6 +234,100 @@ const ManagerPage = () => {
     setDepositModalOpen(false);
     setSelectedAccount(null);
     setDepositAmount('');
+  };
+
+  const openUpdateModal = (account: Account) => {
+    setSelectedAccount(account);
+    setUpdateFormData({
+      accountHolderName: account.accountHolderName,
+      email: account.email,
+      mobile: account.mobile,
+      address: account.address,
+      pan: account.pan,
+      overdraftLimit: account.overdraftLimit
+    });
+    setUpdateModalOpen(true);
+  };
+
+  const closeUpdateModal = () => {
+    setUpdateModalOpen(false);
+    setSelectedAccount(null);
+    setUpdateFormData({
+      accountHolderName: '',
+      email: '',
+      mobile: '',
+      address: '',
+      pan: '',
+      overdraftLimit: 0
+    });
+  };
+
+  const handleUpdateAccount = async () => {
+    if (!selectedAccount) return;
+
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      const requestBody = {
+        accountNumber: selectedAccount.accountNumber,
+        accountType: selectedAccount.accountType,
+        balance: selectedAccount.balance,
+        overdraftLimit: updateFormData.overdraftLimit,
+        createdOn: selectedAccount.createdOn,
+        status: selectedAccount.status,
+        accountHolderName: updateFormData.accountHolderName,
+        mobile: updateFormData.mobile,
+        email: updateFormData.email,
+        address: updateFormData.address,
+        pan: updateFormData.pan,
+        user: {
+          userId: selectedAccount.user.userId
+        },
+        branch: {
+          branchId: selectedAccount.branch.branchId
+        }
+      };
+
+      await axios.put(`http://localhost:8080/accounts/${selectedAccount.accountId}`, requestBody, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Update the account in the local state
+      const updatedAccounts = allAccounts.map(acc => 
+        acc.accountId === selectedAccount.accountId 
+          ? { 
+              ...acc, 
+              accountHolderName: updateFormData.accountHolderName,
+              email: updateFormData.email,
+              mobile: updateFormData.mobile,
+              address: updateFormData.address,
+              pan: updateFormData.pan,
+              overdraftLimit: updateFormData.overdraftLimit
+            }
+          : acc
+      );
+      
+      setAllAccounts(updatedAccounts);
+      
+      // Show success message
+      setUpdateDialogMessage(`Account ${selectedAccount.accountNumber} has been updated successfully!`);
+      setUpdateDialogType('success');
+      setShowUpdateDialog(true);
+      
+      // Close modal
+      closeUpdateModal();
+      
+    } catch (error) {
+      console.error('Error updating account:', error);
+      setUpdateDialogMessage('Failed to update account. Please try again.');
+      setUpdateDialogType('error');
+      setShowUpdateDialog(true);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleDeposit = async () => {
@@ -619,6 +726,13 @@ const ManagerPage = () => {
                                   Deposit
                                 </button>
                               )}
+                              <button
+                                onClick={() => openUpdateModal(account)}
+                                className='inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium bg-purple-500 text-white hover:bg-purple-600 transition-colors duration-200'
+                              >
+                                <User size={14} />
+                                Update
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -750,6 +864,210 @@ const ManagerPage = () => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Account Modal */}
+      {updateModalOpen && selectedAccount && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto'>
+            <div className='flex items-center justify-between mb-6'>
+              <div className='flex items-center gap-3'>
+                <div className='p-2 bg-purple-100 rounded-lg'>
+                  <User className='text-purple-600' size={24} />
+                </div>
+                <div>
+                  <h2 className='text-xl font-bold text-gray-900'>Update Account</h2>
+                  <p className='text-gray-600 text-sm'>Modify account details</p>
+                </div>
+              </div>
+              <button
+                onClick={closeUpdateModal}
+                className='p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200'
+              >
+                <X size={20} className='text-gray-500' />
+              </button>
+            </div>
+
+            <div className='space-y-6'>
+              {/* Account Info */}
+              <div className='bg-gray-50 rounded-xl p-4'>
+                <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                    <span className='text-sm text-gray-600'>Account Number:</span>
+                    <p className='text-sm font-medium text-gray-900'>{selectedAccount.accountNumber}</p>
+                  </div>
+                  <div>
+                    <span className='text-sm text-gray-600'>Account Type:</span>
+                    <p className='text-sm font-medium text-gray-900'>{selectedAccount.accountType}</p>
+                  </div>
+                  <div>
+                    <span className='text-sm text-gray-600'>Current Balance:</span>
+                    <p className='text-sm font-medium text-gray-900'>{formatCurrency(selectedAccount.balance)}</p>
+                  </div>
+                  <div>
+                    <span className='text-sm text-gray-600'>Status:</span>
+                    <p className='text-sm font-medium text-gray-900'>{selectedAccount.status}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Update Form */}
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Account Holder Name *
+                  </label>
+                  <input
+                    type='text'
+                    value={updateFormData.accountHolderName}
+                    onChange={(e) => setUpdateFormData({...updateFormData, accountHolderName: e.target.value})}
+                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Email Address *
+                  </label>
+                  <input
+                    type='email'
+                    value={updateFormData.email}
+                    onChange={(e) => setUpdateFormData({...updateFormData, email: e.target.value})}
+                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Mobile Number *
+                  </label>
+                  <input
+                    type='tel'
+                    value={updateFormData.mobile}
+                    onChange={(e) => setUpdateFormData({...updateFormData, mobile: e.target.value})}
+                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    PAN Number *
+                  </label>
+                  <input
+                    type='text'
+                    value={updateFormData.pan}
+                    onChange={(e) => setUpdateFormData({...updateFormData, pan: e.target.value})}
+                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                    required
+                  />
+                </div>
+
+                <div className='md:col-span-2'>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Address *
+                  </label>
+                  <textarea
+                    value={updateFormData.address}
+                    onChange={(e) => setUpdateFormData({...updateFormData, address: e.target.value})}
+                    rows={3}
+                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Overdraft Limit (₹)
+                  </label>
+                  <input
+                    type='number'
+                    value={updateFormData.overdraftLimit}
+                    onChange={(e) => setUpdateFormData({...updateFormData, overdraftLimit: parseFloat(e.target.value) || 0})}
+                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                    min='0'
+                    step='0.01'
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className='flex gap-3 pt-4 border-t border-gray-200'>
+                <button
+                  onClick={closeUpdateModal}
+                  disabled={updating}
+                  className='flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateAccount}
+                  disabled={updating || !updateFormData.accountHolderName || !updateFormData.email || !updateFormData.mobile || !updateFormData.address || !updateFormData.pan}
+                  className='flex-1 px-4 py-3 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                >
+                  {updating ? (
+                    <div className='flex items-center justify-center gap-2'>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Updating...
+                    </div>
+                  ) : (
+                    'Update Account'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Account Dialog */}
+      {showUpdateDialog && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl'>
+            <div className='text-center'>
+              <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6 ${
+                updateDialogType === 'success' 
+                  ? 'bg-green-100' 
+                  : 'bg-red-100'
+              }`}>
+                {updateDialogType === 'success' ? (
+                  <CheckCircle className='h-8 w-8 text-green-600' />
+                ) : (
+                  <AlertCircle className='h-8 w-8 text-red-600' />
+                )}
+              </div>
+              
+              <h3 className={`text-xl font-bold mb-3 ${
+                updateDialogType === 'success' 
+                  ? 'text-green-900' 
+                  : 'text-red-900'
+              }`}>
+                {updateDialogType === 'success' ? 'Update Successful!' : 'Update Failed'}
+              </h3>
+              
+              <p className={`text-gray-600 mb-6 ${
+                updateDialogType === 'success' 
+                  ? 'text-green-700' 
+                  : 'text-red-700'
+              }`}>
+                {updateDialogMessage}
+              </p>
+              
+              <button
+                onClick={() => setShowUpdateDialog(false)}
+                className={`w-full px-4 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                  updateDialogType === 'success'
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-red-500 text-white hover:bg-red-600'
+                }`}
+              >
+                {updateDialogType === 'success' ? 'Continue' : 'Try Again'}
+              </button>
             </div>
           </div>
         </div>
