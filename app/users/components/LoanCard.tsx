@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Banknote, CheckCircle, Clock, XCircle, Calendar, Percent, Home, Car, GraduationCap, User } from 'lucide-react';
+import axios from 'axios';
 
 interface Loan {
   loanAccountId: number;
@@ -21,9 +22,80 @@ interface LoanCardProps {
   onRepaymentClick: (loan: Loan) => void;
 }
 
+interface Repayment {
+  emisRemaining: number;
+  emisPaid: number;
+  totalEMIs: number;
+}
+
 const LoanCard = ({ loan, onRepaymentClick }: LoanCardProps) => {
+  const [repaymentData, setRepaymentData] = useState<Repayment | null>(null);
+  const [loadingRepayment, setLoadingRepayment] = useState(false);
+
+  // Fetch repayment data for the loan
+  useEffect(() => {
+    const fetchRepaymentData = async () => {
+      if (loan.status !== 'ACTIVE') return;
+      
+      setLoadingRepayment(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await axios.get(`http://localhost:8080/api/repayments/loan/${loan.loanAccountId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data && response.data.length > 0) {
+          // Get the latest repayment record which has the current EMI status
+          const latestRepayment = response.data[response.data.length - 1];
+          setRepaymentData({
+            emisRemaining: latestRepayment.emisRemaining || 0,
+            emisPaid: latestRepayment.emisPaid || 0,
+            totalEMIs: latestRepayment.totalEMIs || 0,
+          });
+        } else {
+          // If no repayments yet, calculate from loan tenure
+          const startDate = new Date(loan.startDate);
+          const endDate = new Date(loan.endDate);
+          const totalMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                             (endDate.getMonth() - startDate.getMonth());
+          
+          setRepaymentData({
+            emisRemaining: totalMonths,
+            emisPaid: 0,
+            totalEMIs: totalMonths,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching repayment data:', error);
+        // Fallback calculation
+        const startDate = new Date(loan.startDate);
+        const endDate = new Date(loan.endDate);
+        const totalMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                           (endDate.getMonth() - startDate.getMonth());
+        
+        setRepaymentData({
+          emisRemaining: totalMonths,
+          emisPaid: 0,
+          totalEMIs: totalMonths,
+        });
+      } finally {
+        setLoadingRepayment(false);
+      }
+    };
+
+    fetchRepaymentData();
+  }, [loan.loanAccountId, loan.status, loan.startDate, loan.endDate]);
   const getStatusConfig = () => {
     switch (loan.status) {
+      case 'ACTIVE':
+        return {
+          color: 'text-green-700',
+          bg: 'bg-green-100',
+          icon: CheckCircle,
+          text: 'Active',
+        };
       case 'APPROVED':
         return {
           color: 'text-green-700',
@@ -113,9 +185,15 @@ const LoanCard = ({ loan, onRepaymentClick }: LoanCardProps) => {
     });
   };
 
+  const isClickable = loan.status === 'ACTIVE';
+  
   return (
     <div 
-      className="relative bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden group"
+      className={`relative bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group ${
+        isClickable 
+          ? 'hover:-translate-y-1 cursor-pointer' 
+          : 'cursor-default opacity-90'
+      }`}
       onClick={() => onRepaymentClick(loan)}
     >
       {/* Gradient Header */}
@@ -162,6 +240,38 @@ const LoanCard = ({ loan, onRepaymentClick }: LoanCardProps) => {
             <span className="font-medium text-gray-900">{formatDate(loan.startDate)} - {formatDate(loan.endDate)}</span>
           </div>
         </div>
+        
+        {/* EMI Progress Section - Only show for active loans */}
+        {loan.status === 'ACTIVE' && (
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-900">EMI Progress</span>
+              {loadingRepayment && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              )}
+            </div>
+            {repaymentData && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700">EMIs Paid:</span>
+                  <span className="font-medium text-blue-900">{repaymentData.emisPaid} / {repaymentData.totalEMIs}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700">Remaining:</span>
+                  <span className="font-medium text-blue-900">{repaymentData.emisRemaining} months</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${repaymentData.totalEMIs > 0 ? (repaymentData.emisPaid / repaymentData.totalEMIs) * 100 : 0}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gray-100 rounded-lg">
             <Banknote size={16} className="text-gray-600" />
@@ -173,6 +283,24 @@ const LoanCard = ({ loan, onRepaymentClick }: LoanCardProps) => {
       </div>
       {/* Hover Effect Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/5 group-hover:to-purple-600/5 transition-all duration-300 rounded-2xl"></div>
+      
+      {/* Status Message Overlay for Non-Active Loans */}
+      {!isClickable && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-2xl">
+          <div className="bg-white rounded-lg p-3 text-center">
+            <p className="text-sm font-medium text-gray-900">
+              {loan.status === 'PENDING' && 'Awaiting Approval'}
+              {loan.status === 'REJECTED' && 'Loan Rejected'}
+              {loan.status === 'APPROVED' && 'Loan Approved'}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              {loan.status === 'PENDING' && 'Please wait for loan officer review'}
+              {loan.status === 'REJECTED' && 'Contact branch for details'}
+              {loan.status === 'APPROVED' && 'Will be activated soon'}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

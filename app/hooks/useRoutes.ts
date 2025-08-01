@@ -107,6 +107,23 @@ const useRoutes = () => {
         ],[pathname])
     }
 
+    if (isLoanOfficer) {
+        routes = useMemo(() => [
+            {
+                label: "Loan Management",
+                href: "/loan-officer",
+                icon: FaHandHoldingUsd,
+                active: pathname === "/loan-officer"
+            },
+            {
+                label: "Sign Out",
+                href: "#",
+                onClick: () => handleLogout(),
+                icon: HiArrowLeftOnRectangle,
+            }
+        ],[pathname])
+    }
+
     return routes;
 }
 

@@ -210,6 +210,11 @@ const LoansPage = () => {
 
   // Handle repayment click
   const handleRepaymentClick = (loan: any) => {
+    // Only allow repayment for active loans
+    if (loan.status !== 'ACTIVE') {
+      alert('Only active loans can be repaid. Please wait for loan approval.');
+      return;
+    }
     setSelectedLoan(loan);
     setRepaymentOpen(true);
     setSelectedAccount(null);
