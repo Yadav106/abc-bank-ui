@@ -53,13 +53,22 @@ interface Employee {
 const AdminPage = () => {
   const [addBranchOpen, setAddBranchOpen] = useState(false);
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
+  const [updateBranchOpen, setUpdateBranchOpen] = useState(false);
+  const [updateEmployeeOpen, setUpdateEmployeeOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEmployeeLoading, setIsEmployeeLoading] = useState(false);
+  const [isUpdateBranchLoading, setIsUpdateBranchLoading] = useState(false);
+  const [isUpdateEmployeeLoading, setIsUpdateEmployeeLoading] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [selectedEmployeeForUpdate, setSelectedEmployeeForUpdate] = useState<Employee | null>(null);
+  const [selectedBranchForUpdate, setSelectedBranchForUpdate] = useState<Branch | null>(null);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [updateDialogMessage, setUpdateDialogMessage] = useState('');
+  const [updateDialogType, setUpdateDialogType] = useState<'success' | 'error'>('success');
 
   const {
     register,
@@ -90,6 +99,35 @@ const AdminPage = () => {
       address: '',
       pan: '',
       branch: null
+    }
+  })
+
+  const {
+    register: registerUpdateBranch,
+    handleSubmit: handleSubmitUpdateBranch,
+    reset: resetUpdateBranch,
+    setValue: setUpdateBranchValue,
+    formState: { errors: updateBranchErrors }
+  } = useForm<FieldValues>({
+    defaultValues: {
+      ifscCode: '',
+      address: ''
+    }
+  })
+
+  const {
+    register: registerUpdateEmployee,
+    handleSubmit: handleSubmitUpdateEmployee,
+    reset: resetUpdateEmployee,
+    setValue: setUpdateEmployeeValue,
+    formState: { errors: updateEmployeeErrors }
+  } = useForm<FieldValues>({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      pan: ''
     }
   })
 
@@ -196,6 +234,109 @@ const AdminPage = () => {
       console.error('Error creating employee:', error);
     } finally {
       setIsEmployeeLoading(false);
+    }
+  }
+
+  const openUpdateBranchModal = (branch: Branch) => {
+    setSelectedBranchForUpdate(branch);
+    setUpdateBranchValue('ifscCode', branch.ifscCode);
+    setUpdateBranchValue('address', branch.address);
+    setUpdateBranchOpen(true);
+  }
+
+  const closeUpdateBranchModal = () => {
+    setUpdateBranchOpen(false);
+    setSelectedBranchForUpdate(null);
+    resetUpdateBranch();
+  }
+
+  const onSubmitUpdateBranch = async (data: FieldValues) => {
+    if (!selectedBranchForUpdate) return;
+    
+    setIsUpdateBranchLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      await axios.put(`http://localhost:8080/branches/${selectedBranchForUpdate.branchId}`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Update local state
+      setBranches(prevBranches => 
+        prevBranches.map(branch => 
+          branch.branchId === selectedBranchForUpdate.branchId 
+            ? { ...branch, ...data }
+            : branch
+        )
+      );
+      
+      setUpdateDialogMessage('Branch updated successfully!');
+      setUpdateDialogType('success');
+      setShowUpdateDialog(true);
+      closeUpdateBranchModal();
+      
+    } catch (error) {
+      console.error('Error updating branch:', error);
+      setUpdateDialogMessage('Failed to update branch. Please try again.');
+      setUpdateDialogType('error');
+      setShowUpdateDialog(true);
+    } finally {
+      setIsUpdateBranchLoading(false);
+    }
+  }
+
+  const openUpdateEmployeeModal = (employee: Employee) => {
+    setSelectedEmployeeForUpdate(employee);
+    setUpdateEmployeeValue('name', employee.name);
+    setUpdateEmployeeValue('email', employee.email);
+    setUpdateEmployeeValue('phone', employee.phone);
+    setUpdateEmployeeValue('address', employee.address);
+    setUpdateEmployeeValue('pan', employee.pan);
+    setUpdateEmployeeOpen(true);
+  }
+
+  const closeUpdateEmployeeModal = () => {
+    setUpdateEmployeeOpen(false);
+    setSelectedEmployeeForUpdate(null);
+    resetUpdateEmployee();
+  }
+
+  const onSubmitUpdateEmployee = async (data: FieldValues) => {
+    if (!selectedEmployeeForUpdate) return;
+    
+    setIsUpdateEmployeeLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      await axios.put(`http://localhost:8080/users/${selectedEmployeeForUpdate.userId}`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Update local state
+      setEmployees(prevEmployees => 
+        prevEmployees.map(employee => 
+          employee.userId === selectedEmployeeForUpdate.userId 
+            ? { ...employee, ...data }
+            : employee
+        )
+      );
+      
+      setUpdateDialogMessage('Employee updated successfully!');
+      setUpdateDialogType('success');
+      setShowUpdateDialog(true);
+      closeUpdateEmployeeModal();
+      
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      setUpdateDialogMessage('Failed to update employee. Please try again.');
+      setUpdateDialogType('error');
+      setShowUpdateDialog(true);
+    } finally {
+      setIsUpdateEmployeeLoading(false);
     }
   }
 
@@ -374,6 +515,15 @@ const AdminPage = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Update Button */}
+                    <button
+                      onClick={() => openUpdateBranchModal(branch)}
+                      className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <Plus size={16} />
+                      Update Branch
+                    </button>
                   </div>
                 </div>
               ))}
@@ -484,6 +634,15 @@ const AdminPage = () => {
                           {roleConfig.text}
                         </span>
                       </div>
+
+                      {/* Update Button */}
+                      <button
+                        onClick={() => openUpdateEmployeeModal(employee)}
+                        className="w-full mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      >
+                        <User size={16} />
+                        Update Employee
+                      </button>
                     </div>
                   </div>
                 );
@@ -731,6 +890,213 @@ const AdminPage = () => {
              </form>
            </div>
          </Modal>
+
+         {/* Update Branch Modal */}
+         <Modal isOpen={updateBranchOpen} onClose={closeUpdateBranchModal}>
+           <div className="p-8 max-w-2xl mx-auto">
+             <div className='flex items-center gap-3 mb-6'>
+               <div className='p-3 bg-blue-100 rounded-xl'>
+                 <Building2 className='text-blue-600' size={24} />
+               </div>
+               <div>
+                 <h2 className="text-2xl font-bold text-gray-900">Update Branch</h2>
+                 <p className="text-gray-600">Update branch information</p>
+               </div>
+             </div>
+
+             <form className="space-y-6" onSubmit={handleSubmitUpdateBranch(onSubmitUpdateBranch)}>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <Input
+                   id="ifscCode"
+                   label="IFSC Code"
+                   register={registerUpdateBranch}
+                   errors={updateBranchErrors}
+                   disabled={isUpdateBranchLoading}
+                   required
+                 />
+                 <Input
+                   id="address"
+                   label="Branch Address"
+                   register={registerUpdateBranch}
+                   errors={updateBranchErrors}
+                   disabled={isUpdateBranchLoading}
+                   required
+                 />
+               </div>
+
+               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                 <div className="flex items-center gap-2 mb-2">
+                   <Globe className="text-blue-600" size={20} />
+                   <h4 className="font-semibold text-blue-900">Update Information</h4>
+                 </div>
+                 <ul className="text-sm text-blue-800 space-y-1">
+                   <li>• IFSC Code must be unique</li>
+                   <li>• Address should be complete and accurate</li>
+                   <li>• Changes will be applied immediately</li>
+                 </ul>
+               </div>
+
+               <div className="flex gap-4 pt-4">
+                 <Button
+                   type="button"
+                   onClick={closeUpdateBranchModal}
+                   disabled={isUpdateBranchLoading}
+                 >
+                   Cancel
+                 </Button>
+                 <Button
+                   disabled={isUpdateBranchLoading}
+                   type="submit"
+                 >
+                   {isUpdateBranchLoading ? (
+                     <div className="flex items-center justify-center gap-2">
+                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                       Updating...
+                     </div>
+                   ) : (
+                     'Update Branch'
+                   )}
+                 </Button>
+               </div>
+             </form>
+           </div>
+         </Modal>
+
+         {/* Update Employee Modal */}
+         <Modal isOpen={updateEmployeeOpen} onClose={closeUpdateEmployeeModal}>
+           <div className="p-8 max-w-2xl mx-auto">
+             <div className='flex items-center gap-3 mb-6'>
+               <div className='p-3 bg-purple-100 rounded-xl'>
+                 <User className='text-purple-600' size={24} />
+               </div>
+               <div>
+                 <h2 className="text-2xl font-bold text-gray-900">Update Employee</h2>
+                 <p className="text-gray-600">Update employee information</p>
+               </div>
+             </div>
+
+             <form className="space-y-6" onSubmit={handleSubmitUpdateEmployee(onSubmitUpdateEmployee)}>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <Input
+                   id="name"
+                   label="Full Name"
+                   register={registerUpdateEmployee}
+                   errors={updateEmployeeErrors}
+                   disabled={isUpdateEmployeeLoading}
+                   required
+                 />
+                 <Input
+                   id="email"
+                   label="Email Address"
+                   type="email"
+                   register={registerUpdateEmployee}
+                   errors={updateEmployeeErrors}
+                   disabled={isUpdateEmployeeLoading}
+                   required
+                 />
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <Input
+                   id="phone"
+                   label="Phone Number"
+                   type="tel"
+                   register={registerUpdateEmployee}
+                   errors={updateEmployeeErrors}
+                   disabled={isUpdateEmployeeLoading}
+                   required
+                 />
+                 <Input
+                   id="pan"
+                   label="PAN Number"
+                   register={registerUpdateEmployee}
+                   errors={updateEmployeeErrors}
+                   disabled={isUpdateEmployeeLoading}
+                   required
+                 />
+               </div>
+
+               <Input
+                 id="address"
+                 label="Address"
+                 register={registerUpdateEmployee}
+                 errors={updateEmployeeErrors}
+                 disabled={isUpdateEmployeeLoading}
+                 required
+               />
+
+               <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                 <div className="flex items-center gap-2 mb-2">
+                   <Shield className="text-purple-600" size={20} />
+                   <h4 className="font-semibold text-purple-900">Update Information</h4>
+                 </div>
+                 <ul className="text-sm text-purple-800 space-y-1">
+                   <li>• Email and PAN should be valid</li>
+                   <li>• Changes will be applied immediately</li>
+                   <li>• Employee can continue using their account</li>
+                 </ul>
+               </div>
+
+               <div className="flex gap-4 pt-4">
+                 <Button
+                   type="button"
+                   onClick={closeUpdateEmployeeModal}
+                   disabled={isUpdateEmployeeLoading}
+                 >
+                   Cancel
+                 </Button>
+                 <Button
+                   disabled={isUpdateEmployeeLoading}
+                   type="submit"
+                 >
+                   {isUpdateEmployeeLoading ? (
+                     <div className="flex items-center justify-center gap-2">
+                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                       Updating...
+                     </div>
+                   ) : (
+                     'Update Employee'
+                   )}
+                 </Button>
+               </div>
+             </form>
+           </div>
+         </Modal>
+
+         {/* Update Success/Error Dialog */}
+         {showUpdateDialog && (
+           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+             <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-xl">
+               <div className="flex flex-col items-center text-center">
+                 <div className={`p-3 rounded-full mb-4 ${
+                   updateDialogType === 'success' ? 'bg-green-100' : 'bg-red-100'
+                 }`}>
+                   {updateDialogType === 'success' ? (
+                     <CheckCircle className="text-green-600" size={32} />
+                   ) : (
+                     <AlertCircle className="text-red-600" size={32} />
+                   )}
+                 </div>
+                 <h3 className={`text-xl font-semibold mb-2 ${
+                   updateDialogType === 'success' ? 'text-green-900' : 'text-red-900'
+                 }`}>
+                   {updateDialogType === 'success' ? 'Success!' : 'Error!'}
+                 </h3>
+                 <p className="text-gray-600 mb-6">{updateDialogMessage}</p>
+                 <button
+                   onClick={() => setShowUpdateDialog(false)}
+                   className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                     updateDialogType === 'success' 
+                       ? 'bg-green-600 text-white hover:bg-green-700' 
+                       : 'bg-red-600 text-white hover:bg-red-700'
+                   }`}
+                 >
+                   {updateDialogType === 'success' ? 'Continue' : 'Try Again'}
+                 </button>
+               </div>
+             </div>
+           </div>
+         )}
       </div>
     </div>
   )
