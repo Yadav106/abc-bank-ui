@@ -13,7 +13,8 @@ interface InputProps {
     disabled?: boolean,
     placeholder?: string,
     min?: string,
-    step?: string
+    step?: string,
+    validation?: any
 }
 
 const Input: React.FC<InputProps> = ({
@@ -26,7 +27,8 @@ const Input: React.FC<InputProps> = ({
     disabled,
     placeholder,
     min,
-    step
+    step,
+    validation
 }) => {
     return ( 
         <div>
@@ -42,7 +44,7 @@ const Input: React.FC<InputProps> = ({
                     placeholder={placeholder}
                     min={min}
                     step={step}
-                    {...register(id, { required })}
+                    {...register(id, { required, ...validation })}
                     className={clsx(`
                         form-input
                         block
@@ -66,6 +68,11 @@ const Input: React.FC<InputProps> = ({
                         disabled && "opacity-50 cursor-default"
                     )}
                 />
+                {errors[id] && (
+                    <p className="mt-1 text-sm text-rose-500">
+                        {errors[id]?.message as string}
+                    </p>
+                )}
             </div>
         </div>
      );

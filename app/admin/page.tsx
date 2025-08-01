@@ -21,7 +21,8 @@ import {
   Clock,
   TrendingUp,
   Briefcase,
-  Globe
+  Globe,
+  Edit
 } from 'lucide-react'
 
 interface Branch {
@@ -79,7 +80,8 @@ const AdminPage = () => {
     defaultValues: {
       ifscCode: '',
       address: ''
-    }
+    },
+    mode: 'onChange'
   })
 
   const {
@@ -99,7 +101,8 @@ const AdminPage = () => {
       address: '',
       pan: '',
       branch: null
-    }
+    },
+    mode: 'onChange'
   })
 
   const {
@@ -112,7 +115,8 @@ const AdminPage = () => {
     defaultValues: {
       ifscCode: '',
       address: ''
-    }
+    },
+    mode: 'onChange'
   })
 
   const {
@@ -128,7 +132,8 @@ const AdminPage = () => {
       phone: '',
       address: '',
       pan: ''
-    }
+    },
+    mode: 'onChange'
   })
 
   // Fetch branches and employees
@@ -521,7 +526,7 @@ const AdminPage = () => {
                       onClick={() => openUpdateBranchModal(branch)}
                       className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
                     >
-                      <Plus size={16} />
+                      <Edit size={16} />
                       Update Branch
                     </button>
                   </div>
@@ -638,10 +643,14 @@ const AdminPage = () => {
                       {/* Update Button */}
                       <button
                         onClick={() => openUpdateEmployeeModal(employee)}
-                        className="w-full mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                        className={`w-full mt-4 px-4 py-2 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 ${
+                          employee.role === 'ROLE_MANAGER' 
+                            ? 'bg-purple-600 hover:bg-purple-700' 
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                       >
-                        <User size={16} />
-                        Update Employee
+                        <Edit size={16} />
+                        Update {roleConfig.text}
                       </button>
                     </div>
                   </div>
@@ -673,24 +682,50 @@ const AdminPage = () => {
              </div>
 
              <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="ifscCode"
-                   label="IFSC Code"
-                   register={register}
-                   errors={errors}
-                   disabled={isLoading}
-                   required
-                 />
-                 <Input
-                   id="address"
-                   label="Branch Address"
-                   register={register}
-                   errors={errors}
-                   disabled={isLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="ifscCode"
+                    label="IFSC Code"
+                    register={register}
+                    errors={errors}
+                    disabled={isLoading}
+                    required
+                    validation={{
+                      required: 'IFSC Code is required',
+                      minLength: {
+                        value: 11,
+                        message: 'IFSC Code must be 11 characters'
+                      },
+                      maxLength: {
+                        value: 11,
+                        message: 'IFSC Code must be 11 characters'
+                      },
+                      pattern: {
+                        value: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+                        message: 'IFSC Code must be in format: ABCD0123456'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="address"
+                    label="Branch Address"
+                    register={register}
+                    errors={errors}
+                    disabled={isLoading}
+                    required
+                    validation={{
+                      required: 'Branch address is required',
+                      minLength: {
+                        value: 10,
+                        message: 'Address must be at least 10 characters'
+                      },
+                      maxLength: {
+                        value: 200,
+                        message: 'Address must be less than 200 characters'
+                      }
+                    }}
+                  />
+                </div>
 
                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                  <div className="flex items-center gap-2 mb-2">
@@ -744,74 +779,151 @@ const AdminPage = () => {
              </div>
 
              <form className="space-y-6" onSubmit={handleSubmitEmployee(onSubmitEmployee)}>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="username"
-                   label="Username"
-                   register={registerEmployee}
-                   errors={employeeErrors}
-                   disabled={isEmployeeLoading}
-                   required
-                 />
-                 <Input
-                   id="password"
-                   label="Password"
-                   type="password"
-                   register={registerEmployee}
-                   errors={employeeErrors}
-                   disabled={isEmployeeLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="username"
+                    label="Username"
+                    register={registerEmployee}
+                    errors={employeeErrors}
+                    disabled={isEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Username is required',
+                      minLength: {
+                        value: 3,
+                        message: 'Username must be at least 3 characters'
+                      },
+                      maxLength: {
+                        value: 20,
+                        message: 'Username must be less than 20 characters'
+                      },
+                      pattern: {
+                        value: /^[a-zA-Z0-9_]+$/,
+                        message: 'Username can only contain letters, numbers, and underscores'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="password"
+                    label="Password"
+                    type="password"
+                    register={registerEmployee}
+                    errors={employeeErrors}
+                    disabled={isEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Password is required',
+                      minLength: {
+                        value: 8,
+                        message: 'Password must be at least 8 characters'
+                      },
+                      maxLength: {
+                        value: 50,
+                        message: 'Password must be less than 50 characters'
+                      },
+                      pattern: {
+                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                        message: 'Password must contain uppercase, lowercase, number, and special character'
+                      }
+                    }}
+                  />
+                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="name"
-                   label="Full Name"
-                   register={registerEmployee}
-                   errors={employeeErrors}
-                   disabled={isEmployeeLoading}
-                   required
-                 />
-                 <Input
-                   id="email"
-                   label="Email Address"
-                   type="email"
-                   register={registerEmployee}
-                   errors={employeeErrors}
-                   disabled={isEmployeeLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="name"
+                    label="Full Name"
+                    register={registerEmployee}
+                    errors={employeeErrors}
+                    disabled={isEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Full name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters'
+                      },
+                      maxLength: {
+                        value: 50,
+                        message: 'Name must be less than 50 characters'
+                      },
+                      pattern: {
+                        value: /^[a-zA-Z\s]+$/,
+                        message: 'Name can only contain letters and spaces'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="email"
+                    label="Email Address"
+                    type="email"
+                    register={registerEmployee}
+                    errors={employeeErrors}
+                    disabled={isEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Please enter a valid email address'
+                      }
+                    }}
+                  />
+                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="phone"
-                   label="Phone Number"
-                   type="tel"
-                   register={registerEmployee}
-                   errors={employeeErrors}
-                   disabled={isEmployeeLoading}
-                   required
-                 />
-                 <Input
-                   id="pan"
-                   label="PAN Number"
-                   register={registerEmployee}
-                   errors={employeeErrors}
-                   disabled={isEmployeeLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="phone"
+                    label="Phone Number"
+                    type="tel"
+                    register={registerEmployee}
+                    errors={employeeErrors}
+                    disabled={isEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Phone number is required',
+                      pattern: {
+                        value: /^[6-9]\d{9}$/,
+                        message: 'Please enter a valid 10-digit Indian mobile number'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="pan"
+                    label="PAN Number"
+                    register={registerEmployee}
+                    errors={employeeErrors}
+                    disabled={isEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'PAN number is required',
+                      pattern: {
+                        value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                        message: 'Please enter a valid PAN number (e.g., ABCDE1234F)'
+                      }
+                    }}
+                  />
+                </div>
 
-               <Input
-                 id="address"
-                 label="Address"
-                 register={registerEmployee}
-                 errors={employeeErrors}
-                 disabled={isEmployeeLoading}
-                 required
-               />
+                               <Input
+                  id="address"
+                  label="Address"
+                  register={registerEmployee}
+                  errors={employeeErrors}
+                  disabled={isEmployeeLoading}
+                  required
+                  validation={{
+                    required: 'Address is required',
+                    minLength: {
+                      value: 10,
+                      message: 'Address must be at least 10 characters'
+                    },
+                    maxLength: {
+                      value: 200,
+                      message: 'Address must be less than 200 characters'
+                    }
+                  }}
+                />
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div>
@@ -905,24 +1017,50 @@ const AdminPage = () => {
              </div>
 
              <form className="space-y-6" onSubmit={handleSubmitUpdateBranch(onSubmitUpdateBranch)}>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="ifscCode"
-                   label="IFSC Code"
-                   register={registerUpdateBranch}
-                   errors={updateBranchErrors}
-                   disabled={isUpdateBranchLoading}
-                   required
-                 />
-                 <Input
-                   id="address"
-                   label="Branch Address"
-                   register={registerUpdateBranch}
-                   errors={updateBranchErrors}
-                   disabled={isUpdateBranchLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="ifscCode"
+                    label="IFSC Code"
+                    register={registerUpdateBranch}
+                    errors={updateBranchErrors}
+                    disabled={isUpdateBranchLoading}
+                    required
+                    validation={{
+                      required: 'IFSC Code is required',
+                      minLength: {
+                        value: 11,
+                        message: 'IFSC Code must be 11 characters'
+                      },
+                      maxLength: {
+                        value: 11,
+                        message: 'IFSC Code must be 11 characters'
+                      },
+                      pattern: {
+                        value: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+                        message: 'IFSC Code must be in format: ABCD0123456'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="address"
+                    label="Branch Address"
+                    register={registerUpdateBranch}
+                    errors={updateBranchErrors}
+                    disabled={isUpdateBranchLoading}
+                    required
+                    validation={{
+                      required: 'Branch address is required',
+                      minLength: {
+                        value: 10,
+                        message: 'Address must be at least 10 characters'
+                      },
+                      maxLength: {
+                        value: 200,
+                        message: 'Address must be less than 200 characters'
+                      }
+                    }}
+                  />
+                </div>
 
                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                  <div className="flex items-center gap-2 mb-2">
@@ -976,54 +1114,101 @@ const AdminPage = () => {
              </div>
 
              <form className="space-y-6" onSubmit={handleSubmitUpdateEmployee(onSubmitUpdateEmployee)}>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="name"
-                   label="Full Name"
-                   register={registerUpdateEmployee}
-                   errors={updateEmployeeErrors}
-                   disabled={isUpdateEmployeeLoading}
-                   required
-                 />
-                 <Input
-                   id="email"
-                   label="Email Address"
-                   type="email"
-                   register={registerUpdateEmployee}
-                   errors={updateEmployeeErrors}
-                   disabled={isUpdateEmployeeLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="name"
+                    label="Full Name"
+                    register={registerUpdateEmployee}
+                    errors={updateEmployeeErrors}
+                    disabled={isUpdateEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Full name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters'
+                      },
+                      maxLength: {
+                        value: 50,
+                        message: 'Name must be less than 50 characters'
+                      },
+                      pattern: {
+                        value: /^[a-zA-Z\s]+$/,
+                        message: 'Name can only contain letters and spaces'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="email"
+                    label="Email Address"
+                    type="email"
+                    register={registerUpdateEmployee}
+                    errors={updateEmployeeErrors}
+                    disabled={isUpdateEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Please enter a valid email address'
+                      }
+                    }}
+                  />
+                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   id="phone"
-                   label="Phone Number"
-                   type="tel"
-                   register={registerUpdateEmployee}
-                   errors={updateEmployeeErrors}
-                   disabled={isUpdateEmployeeLoading}
-                   required
-                 />
-                 <Input
-                   id="pan"
-                   label="PAN Number"
-                   register={registerUpdateEmployee}
-                   errors={updateEmployeeErrors}
-                   disabled={isUpdateEmployeeLoading}
-                   required
-                 />
-               </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    id="phone"
+                    label="Phone Number"
+                    type="tel"
+                    register={registerUpdateEmployee}
+                    errors={updateEmployeeErrors}
+                    disabled={isUpdateEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'Phone number is required',
+                      pattern: {
+                        value: /^[6-9]\d{9}$/,
+                        message: 'Please enter a valid 10-digit Indian mobile number'
+                      }
+                    }}
+                  />
+                  <Input
+                    id="pan"
+                    label="PAN Number"
+                    register={registerUpdateEmployee}
+                    errors={updateEmployeeErrors}
+                    disabled={isUpdateEmployeeLoading}
+                    required
+                    validation={{
+                      required: 'PAN number is required',
+                      pattern: {
+                        value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                        message: 'Please enter a valid PAN number (e.g., ABCDE1234F)'
+                      }
+                    }}
+                  />
+                </div>
 
-               <Input
-                 id="address"
-                 label="Address"
-                 register={registerUpdateEmployee}
-                 errors={updateEmployeeErrors}
-                 disabled={isUpdateEmployeeLoading}
-                 required
-               />
+                               <Input
+                  id="address"
+                  label="Address"
+                  register={registerUpdateEmployee}
+                  errors={updateEmployeeErrors}
+                  disabled={isUpdateEmployeeLoading}
+                  required
+                  validation={{
+                    required: 'Address is required',
+                    minLength: {
+                      value: 10,
+                      message: 'Address must be at least 10 characters'
+                    },
+                    maxLength: {
+                      value: 200,
+                      message: 'Address must be less than 200 characters'
+                    }
+                  }}
+                />
 
                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
                  <div className="flex items-center gap-2 mb-2">

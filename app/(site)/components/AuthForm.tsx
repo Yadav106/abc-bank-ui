@@ -76,7 +76,8 @@ const AuthForm = () => {
             pan: '',
             username: '',
             password: ''
-        }
+        },
+        mode: 'onChange'
     });
 
     const onSubmit: SubmitHandler<FieldValues> = (data) => {
@@ -121,24 +122,58 @@ const AuthForm = () => {
                         <>
                             <Input 
                                 id="name" 
-                                label="Name" 
+                                label="Full Name" 
                                 register={register} 
                                 errors={errors}
                                 disabled={isLoading}
+                                required
+                                validation={{
+                                    required: 'Full name is required',
+                                    minLength: {
+                                        value: 2,
+                                        message: 'Name must be at least 2 characters'
+                                    },
+                                    maxLength: {
+                                        value: 50,
+                                        message: 'Name must be less than 50 characters'
+                                    },
+                                    pattern: {
+                                        value: /^[a-zA-Z\s]+$/,
+                                        message: 'Name can only contain letters and spaces'
+                                    }
+                                }}
                             />
                             <Input 
                                 id="email" 
-                                label="Email" 
+                                label="Email Address" 
+                                type="email"
                                 register={register} 
                                 errors={errors}
                                 disabled={isLoading}
+                                required
+                                validation={{
+                                    required: 'Email is required',
+                                    pattern: {
+                                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                        message: 'Please enter a valid email address'
+                                    }
+                                }}
                             />
                             <Input 
                                 id="phone" 
-                                label="Phone" 
+                                label="Phone Number" 
+                                type="tel"
                                 register={register} 
                                 errors={errors}
                                 disabled={isLoading}
+                                required
+                                validation={{
+                                    required: 'Phone number is required',
+                                    pattern: {
+                                        value: /^[6-9]\d{9}$/,
+                                        message: 'Please enter a valid 10-digit Indian mobile number'
+                                    }
+                                }}
                             />
                             <Input 
                                 id="address" 
@@ -146,13 +181,33 @@ const AuthForm = () => {
                                 register={register} 
                                 errors={errors}
                                 disabled={isLoading}
+                                required
+                                validation={{
+                                    required: 'Address is required',
+                                    minLength: {
+                                        value: 10,
+                                        message: 'Address must be at least 10 characters'
+                                    },
+                                    maxLength: {
+                                        value: 200,
+                                        message: 'Address must be less than 200 characters'
+                                    }
+                                }}
                             />
                             <Input 
                                 id="pan" 
-                                label="PAN" 
+                                label="PAN Number" 
                                 register={register} 
                                 errors={errors}
                                 disabled={isLoading}
+                                required
+                                validation={{
+                                    required: 'PAN number is required',
+                                    pattern: {
+                                        value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                                        message: 'Please enter a valid PAN number (e.g., ABCDE1234F)'
+                                    }
+                                }}
                             />
                         </>
                     )}
@@ -163,6 +218,22 @@ const AuthForm = () => {
                         register={register} 
                         errors={errors}
                         disabled={isLoading}
+                        required
+                        validation={{
+                            required: 'Username is required',
+                            minLength: {
+                                value: 3,
+                                message: 'Username must be at least 3 characters'
+                            },
+                            maxLength: {
+                                value: 20,
+                                message: 'Username must be less than 20 characters'
+                            },
+                            pattern: {
+                                value: /^[a-zA-Z0-9_]+$/,
+                                message: 'Username can only contain letters, numbers, and underscores'
+                            }
+                        }}
                     />
                     <Input 
                         id="password" 
@@ -171,6 +242,24 @@ const AuthForm = () => {
                         register={register} 
                         errors={errors}
                         disabled={isLoading}
+                        required
+                        validation={{
+                            required: 'Password is required',
+                            minLength: {
+                                value: variant === 'REGISTER' ? 8 : 1,
+                                message: variant === 'REGISTER' ? 'Password must be at least 8 characters' : 'Password is required'
+                            },
+                            maxLength: {
+                                value: 50,
+                                message: 'Password must be less than 50 characters'
+                            },
+                            ...(variant === 'REGISTER' && {
+                                pattern: {
+                                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                                    message: 'Password must contain uppercase, lowercase, number, and special character'
+                                }
+                            })
+                        }}
                     />
                     <div>
                         <Button
